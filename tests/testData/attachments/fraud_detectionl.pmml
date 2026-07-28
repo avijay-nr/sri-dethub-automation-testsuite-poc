@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_4" version="4.4">
+  <Header copyright="Sample Model" description="Fraud Detection Decision Tree for AML Transaction Monitoring">
+    <Application name="NetReveal AAP" version="9.0"/>
+    <Timestamp>2026-05-28T00:00:00</Timestamp>
+  </Header>
+  <DataDictionary numberOfFields="6">
+    <DataField name="transaction_amount" optype="continuous" dataType="double"/>
+    <DataField name="transaction_frequency" optype="continuous" dataType="integer"/>
+    <DataField name="account_age_days" optype="continuous" dataType="integer"/>
+    <DataField name="is_international" optype="categorical" dataType="string"/>
+    <DataField name="customer_risk_rating" optype="categorical" dataType="string"/>
+    <DataField name="fraud_flag" optype="categorical" dataType="string"/>
+  </DataDictionary>
+  <!-- Full tree model with fraud detection logic included -->
+</PMML>
