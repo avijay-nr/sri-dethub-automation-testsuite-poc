@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { config } from '../../configFiles/config';
 import { faker } from '@faker-js/faker/locale/zu_ZA';
+import * as loginDef from '../loginTestDef/loginDef';
 
 type PageArgs = { page: Page };
 type ProjectNameArgs = PageArgs & { projectName: string };
@@ -258,11 +259,29 @@ async function clickFirstVisibleWithRetry(
   return false;
 }
 
+async function waitForPostLoginShell(page: Page): Promise<void> {
+  const { auth } = projectCreationLocators(page);
+  const authCandidates = authLocatorCandidates(page);
+
+  // Wait until login form is no longer the active view.
+  await Promise.race([
+    auth.signInHeading.waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
+    auth.usernameInput.first().waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
+    authCandidates.signInSignals[0].waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
+    page.waitForURL(/\/smc2\/(home|dashboard|projects)/i, { timeout: 60_000 }).catch(() => undefined),
+  ]);
+
+  // Give the SPA a moment to render shell controls after auth redirect.
+  await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+  await page.waitForTimeout(2_000);
+}
+
 export async function openProjectsList({ page }: PageArgs): Promise<void> {
   const { projects } = projectCreationLocators(page);
 
-  // Assume caller already authenticated and just navigate to Projects reliably.
-  await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+  // Reuse the stabilized login workflow from login definitions.
+  await loginDef.loginToPortal(page);
+  await waitForPostLoginShell(page);
 
   let opened = await clickFirstVisibleWithRetry(page, projects.entryPoints, 4);
 
