@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
-import * as loginDef from '../definitionFiles/loginTestDef/loginDef';
+import * as loginDef from '../definitionFiles/loginTest/logindef';
 
-test('TC_001 - Login to SRI portal @SRIPortalLogin', async ({ page }) => {
+test('TC_001 - Login to SRI portal @LOGIN_TC001', async ({ page }) => {
   await test.step('Login to SRI portal', async () => {
     await loginDef.loginToPortal(page);
   });
@@ -10,7 +10,7 @@ test('TC_001 - Login to SRI portal @SRIPortalLogin', async ({ page }) => {
   });
 });
 
-test('TC_002 - Verify invalid login @SRIPortalInvalidLogin', async ({ page }) => {
+test('TC_002 - Verify invalid login @LOGIN_TC002', async ({ page }) => {
   await test.step('Login with invalid username', async () => {
     await loginDef.loginWithInvalidUsername(page);
   });
