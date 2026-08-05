@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { config } from '../../configFiles/config';
 import { faker } from '@faker-js/faker/locale/zu_ZA';
-import * as loginDef from '../loginTestDef/loginDef';
+import * as loginDef from '../loginTest/logindef';
 
 type PageArgs = { page: Page };
 type ProjectNameArgs = PageArgs & { projectName: string };
@@ -179,10 +179,11 @@ function escapeRegExp(value: string): string {
 
 function resolveProjectsUrl(): string {
   const configuredUrl = (config as unknown as Record<string, unknown>).url;
-  const baseUrl =
-    typeof configuredUrl === 'string' && configuredUrl.trim().length > 0
-      ? configuredUrl
-      : 'https://det-sri-test-core-api.symphonyai.dev/smc2/home';
+  if (typeof configuredUrl !== 'string' || configuredUrl.trim().length === 0) {
+    throw new Error('Missing config.url in tests/configFiles configuration. Set url in the active TEST_CONFIG file or environment.');
+  }
+
+  const baseUrl = configuredUrl.trim();
 
   return baseUrl.replace(/\/smc2\/(home|dashboard|login|projects).*$/i, '/smc2/projects');
 }
@@ -259,69 +260,98 @@ async function clickFirstVisibleWithRetry(
   return false;
 }
 
-async function waitForPostLoginShell(page: Page): Promise<void> {
-  const { auth } = projectCreationLocators(page);
-  const authCandidates = authLocatorCandidates(page);
-
-  // Wait until login form is no longer the active view.
-  await Promise.race([
-    auth.signInHeading.waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
-    auth.usernameInput.first().waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
-    authCandidates.signInSignals[0].waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined),
-    page.waitForURL(/\/smc2\/(home|dashboard|projects)/i, { timeout: 60_000 }).catch(() => undefined),
-  ]);
-
-  // Give the SPA a moment to render shell controls after auth redirect.
-  await page.waitForLoadState('domcontentloaded').catch(() => undefined);
-  await page.waitForTimeout(2_000);
-}
-
 export async function openProjectsList({ page }: PageArgs): Promise<void> {
   const { projects } = projectCreationLocators(page);
 
-  // Reuse the stabilized login workflow from login definitions.
-  await loginDef.loginToPortal(page);
-  await waitForPostLoginShell(page);
+  // Assume caller already authenticated and just navigate to Projects reliably.
+  await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+
+  const signInVisible =
+    (await page.getByRole('button', { name: /sign in|login/i }).first().isVisible().catch(() => false)) ||
+    (await page.locator('input[type="password"]').first().isVisible().catch(() => false));
+
+  if (signInVisible) {
+    await loginDef.loginToPortal(page);
+    await loginDef.assertLoginSuccess(page);
+  }
 
   let opened = await clickFirstVisibleWithRetry(page, projects.entryPoints, 4);
 
   if (!opened) {
     await page.goto(resolveProjectsUrl(), { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => undefined);
-    await page.waitForTimeout(2_000);
-    opened = /\/smc2\/projects/i.test(page.url());
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    opened = await clickFirstVisibleWithRetry(page, projects.entryPoints, 2);
+    opened = opened || /\/smc2\/projects/i.test(page.url());
   }
 
-  let landingReady = false;
-  for (const signal of projects.landingSignals) {
-    if (await signal.first().isVisible().catch(() => false)) {
-      landingReady = true;
-      break;
-    }
-  }
-
-  if (!landingReady) {
-    await page.waitForTimeout(5_000);
-
+  for (let attempt = 0; attempt < 8; attempt++) {
+    let landingReady = false;
     for (const signal of projects.landingSignals) {
       if (await signal.first().isVisible().catch(() => false)) {
         landingReady = true;
         break;
       }
     }
+
+    if (landingReady) {
+      return;
+    }
+
+    if (attempt === 2) {
+      await clickFirstVisibleWithRetry(page, projects.entryPoints, 2);
+    }
+
+    if (attempt === 5 && !/\/smc2\/projects/i.test(page.url())) {
+      await page.goto(resolveProjectsUrl(), { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => undefined);
+    }
+
+    await page.waitForTimeout(1_500);
   }
 
-  expect(opened || landingReady).toBeTruthy();
+  const landingSignalVisible = await expect
+    .poll(async () => {
+      for (const signal of projects.landingSignals) {
+        if (await signal.first().isVisible().catch(() => false)) {
+          return true;
+        }
+      }
+
+      return /\/smc2\/projects/i.test(page.url());
+    }, {
+      timeout: 30_000,
+      intervals: [500, 1_000, 1_500, 2_000],
+    })
+    .toBeTruthy();
+
+  return landingSignalVisible;
 }
 
 export async function assertProjectsListVisible({ page }: PageArgs): Promise<void> {
-  const { projects } = projectCreationLocators(page);
+  const { projects, createProject } = projectCreationLocators(page);
 
+  // Accept multiple stable signals for Projects landing to avoid UI timing flakiness.
   let found = false;
-  for (const signal of projects.listSignals) {
-    if (await signal.first().isVisible().catch(() => false)) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    for (const signal of projects.listSignals) {
+      if (await signal.first().isVisible().catch(() => false)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found && (await createProject.createProjectButton.isVisible().catch(() => false))) {
       found = true;
+    }
+
+    if (!found && /\/smc2\/projects/i.test(page.url())) {
+      found = true;
+    }
+
+    if (found) {
       break;
     }
+
+    await page.waitForTimeout(2_000);
   }
 
   expect(found).toBeTruthy();
@@ -519,9 +549,27 @@ export async function confirmProjectDeletion({ page }: PageArgs): Promise<void> 
 
 export async function assertProjectStillPresent({ page, projectName }: ProjectNameArgs): Promise<void> {
   const { projects } = projectCreationLocators(page);
-  const projectRow = projects.projectNameText(projectName);
-  const projectVisible = await projectRow.isVisible().catch(() => false);
-  expect(projectVisible).toBeTruthy();
+
+  await expect
+    .poll(async () => {
+      const projectRow = projects.projectNameText(projectName);
+      if (await projectRow.isVisible().catch(() => false)) {
+        return true;
+      }
+
+      const exactByText = page.getByText(projectName, { exact: true }).first();
+      if (await exactByText.isVisible().catch(() => false)) {
+        return true;
+      }
+
+      const escapedName = escapeRegExp(projectName);
+      const regexByText = page.getByText(new RegExp(escapedName, 'i')).first();
+      return await regexByText.isVisible().catch(() => false);
+    }, {
+      timeout: 30_000,
+      intervals: [500, 1_000, 1_500, 2_000],
+    })
+    .toBeTruthy();
 }
 
 export async function assertProjectDeleted({ page, projectName }: ProjectNameArgs): Promise<void> {

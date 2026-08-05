@@ -46,17 +46,64 @@ async function isAlreadyAuthenticated(page: Page): Promise<boolean> {
   return /\/smc2\/(home|dashboard|projects)/i.test(page.url());
 }
 
+function loginFormSignals(page: Page) {
+  return [
+    byXPath(page, xpaths.usernameInput),
+    page.getByRole('textbox', { name: /username/i }).first(),
+    page.locator('input[name*="user" i], input[id*="user" i], input[type="text"]').first(),
+  ];
+}
+
+async function isLoginFormVisible(page: Page): Promise<boolean> {
+  for (const signal of loginFormSignals(page)) {
+    if (await signal.isVisible().catch(() => false)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function openSamlApplicationIfPresent(page: Page): Promise<void> {
+  const samlEntryCandidates = [
+    page.getByRole('link', { name: /^smui$/i }).first(),
+    page.getByRole('button', { name: /^smui$/i }).first(),
+    page.getByText(/^smui$/i).first(),
+    page.locator('a[href*="smui" i], button[aria-label*="smui" i]').first(),
+  ];
+
+  for (const candidate of samlEntryCandidates) {
+    if (await candidate.isVisible().catch(() => false)) {
+      await candidate.click({ timeout: 10_000 }).catch(async () => {
+        await candidate.click({ force: true, timeout: 10_000 });
+      });
+      break;
+    }
+  }
+}
+
 function cfgString(key: string, fallback: string): string {
   const value = (config as unknown as Record<string, unknown>)[key];
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 }
 
+function resolvePortalUrl(): string {
+  const configuredUrl = (config as unknown as Record<string, unknown>).url;
+  if (typeof configuredUrl !== 'string' || configuredUrl.trim().length === 0) {
+    throw new Error('Missing config.url in tests/configFiles configuration. Set url in the active TEST_CONFIG file or environment.');
+  }
+
+  return configuredUrl.trim();
+}
+
 export async function navigateToLoginPage(pageOrArgs: PageInput): Promise<void> {
   const page = resolvePage(pageOrArgs);
-  await page.goto(cfgString('url', 'https://det-sri-test-core-api.symphonyai.dev/smc2/home'), {
+  await page.goto(resolvePortalUrl(), {
     waitUntil: 'commit',
     timeout: 0,
   });
+
+  await openSamlApplicationIfPresent(page);
 }
 
 export async function enterUsername(pageOrArgs: PageInput): Promise<void> {
@@ -91,9 +138,50 @@ async function submitLogin({ page, username, password }: LoginArgs): Promise<voi
     return;
   }
 
-  await byXPath(resolvedPage, xpaths.usernameInput).waitFor({ state: 'visible', timeout: 30_000 });
-  await byXPath(resolvedPage, xpaths.usernameInput).fill(username);
-  await byXPath(resolvedPage, xpaths.passwordInput).fill(password);
+  await expect
+    .poll(async () => (await isLoginFormVisible(resolvedPage)) || (await isAlreadyAuthenticated(resolvedPage)), {
+      timeout: 30_000,
+      intervals: [500, 1_000, 2_000],
+    })
+    .toBeTruthy();
+
+  if (await isAlreadyAuthenticated(resolvedPage)) {
+    return;
+  }
+
+  const usernameCandidates = loginFormSignals(resolvedPage);
+  const passwordCandidates = [
+    byXPath(resolvedPage, xpaths.passwordInput),
+    resolvedPage.getByRole('textbox', { name: /password/i }).first(),
+    resolvedPage.locator('input[type="password"]').first(),
+  ];
+
+  let usernameFilled = false;
+  for (const candidate of usernameCandidates) {
+    if (await candidate.isVisible().catch(() => false)) {
+      await candidate.fill(username);
+      usernameFilled = true;
+      break;
+    }
+  }
+
+  if (!usernameFilled) {
+    await usernameCandidates[0].fill(username);
+  }
+
+  let passwordFilled = false;
+  for (const candidate of passwordCandidates) {
+    if (await candidate.isVisible().catch(() => false)) {
+      await candidate.fill(password);
+      passwordFilled = true;
+      break;
+    }
+  }
+
+  if (!passwordFilled) {
+    await passwordCandidates[0].fill(password);
+  }
+
   await byXPath(resolvedPage, xpaths.loginButton).click();
 }
 

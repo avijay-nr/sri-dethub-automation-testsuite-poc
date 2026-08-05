@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import { config as config_SRIGenericTest } from './config_SRIGenericTest';
-import { config as config_SRIGenericTest_Backup } from './config_SRIGenericTest_Backup';
 
 const envCandidates = [
   path.resolve(process.cwd(), '.env'),
@@ -19,7 +18,6 @@ if (resolvedEnvPath) {
 
 const configMap = {
   config_SRIGenericTest,
-  config_SRIGenericTest_Backup,
 } as const;
 
 type ConfigKey = keyof typeof configMap;
