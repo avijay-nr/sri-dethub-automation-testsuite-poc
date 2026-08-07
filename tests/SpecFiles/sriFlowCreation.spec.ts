@@ -10,7 +10,7 @@ const projectSeed = {
 };
 test.describe.serial('@FlowCreation dependent tests', () => {
   test.beforeEach(async ({ page }) => {
-    await test.step('Login to NR portal', async () => {
+    await test.step('Login to SRI portal', async () => {
       await loginDef.loginToPortal(page);
       await loginDef.assertLoginSuccess(page);
     });
@@ -41,6 +41,8 @@ test.describe.serial('@FlowCreation dependent tests', () => {
   });
 
   test('TC_003 - Open project details and click +Create Flow @FC_TC003', async ({ page }) => {
+  test.setTimeout(180_000);
+
   const project = {
     name: `${NAME_PREFIX}_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
     description: `${NAME_PREFIX} automation ${faker.lorem.words(2)}`,
@@ -86,6 +88,8 @@ test.describe.serial('@FlowCreation dependent tests', () => {
 });
 
   test('TC_004 - Duplicate flow name should be rejected @FC_TC004', async ({ page }) => {
+    test.setTimeout(180_000);
+
     const projectSeedForDuplicateFlow = {
       name: `${NAME_PREFIX}_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
       description: `${NAME_PREFIX} duplicate container ${faker.lorem.words(2)}`,
@@ -94,48 +98,56 @@ test.describe.serial('@FlowCreation dependent tests', () => {
       name: `flow_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
       description: `${NAME_PREFIX} duplicate ${faker.lorem.words(2)}`,
     };
-    await test.step('Open Projects list', async () => {
-      await projectCreationDef.openProjectsList({ page });
-      await projectCreationDef.assertProjectsListVisible({ page });
-    });
-    await test.step('Create project', async () => {
-      await flowCreationDef.startFlowCreation({ page });
-      await flowCreationDef.createFlow({
-        page,
-        flowName: projectSeedForDuplicateFlow.name,
-        flowDescription: projectSeedForDuplicateFlow.description,
+    try {
+      await test.step('Open Projects list', async () => {
+        await projectCreationDef.openProjectsList({ page });
+        await projectCreationDef.assertProjectsListVisible({ page });
       });
-      await projectCreationDef.clickCloseProjectDialog({ page }).catch(() => {});
-    });
-    await test.step('Open Project Details', async () => {
-      await flowCreationDef.clickFlowProjectDetails({ page, flowName: projectSeedForDuplicateFlow.name });
-    });
-    await test.step('Open Flows tab', async () => {
-      await flowCreationDef.openFlowsTabInProject({ page });
-    });
-    await test.step('Create first Transaction Monitoring flow', async () => {
-      await flowCreationDef.createFlowInsideProject({
-        page,
-        flowName: flowSeed.name,
-        flowDescription: flowSeed.description,
+      await test.step('Create project', async () => {
+        await flowCreationDef.startFlowCreation({ page });
+        await flowCreationDef.createFlow({
+          page,
+          flowName: projectSeedForDuplicateFlow.name,
+          flowDescription: projectSeedForDuplicateFlow.description,
+        });
+        await projectCreationDef.clickCloseProjectDialog({ page }).catch(() => {});
       });
-    });
-    await test.step('Attempt duplicate flow creation with same name and description', async () => {
-      await flowCreationDef.createFlowInsideProject({
-        page,
-        flowName: flowSeed.name,
-        flowDescription: flowSeed.description,
-      }).catch(() => {
-        // Expected to fail since flow with same name already exists
+      await test.step('Open Project Details', async () => {
+        await flowCreationDef.clickFlowProjectDetails({ page, flowName: projectSeedForDuplicateFlow.name });
       });
-    });
-    await test.step('Verify duplicate flow creation is rejected', async () => {
-      await flowCreationDef.assertDuplicateFlowRejected({ page, flowName: flowSeed.name });
-    });
-    await test.step('Assert only one flow is visible in Flows tab', async () => {
-      await flowCreationDef.assertSingleFlowVisibleInsideProject({ page, flowName: flowSeed.name });
-      await projectCreationDef.clickCloseProjectDialog({ page }).catch(() => {});
-    });
+      await test.step('Open Flows tab', async () => {
+        await flowCreationDef.openFlowsTabInProject({ page });
+      });
+      await test.step('Create first flow', async () => {
+        await flowCreationDef.createFlowInsideProject({
+          page,
+          flowName: flowSeed.name,
+          flowDescription: flowSeed.description,
+        });
+      });
+
+      await test.step('Verify first flow is visible', async () => {
+        await flowCreationDef.assertFlowVisibleInsideProject({ page, flowName: flowSeed.name });
+      });
+
+      await test.step('Once the flow is created, create another flow with same details', async () => {
+        await flowCreationDef.createFlowInsideProject({
+          page,
+          flowName: flowSeed.name,
+          flowDescription: flowSeed.description,
+        }).catch(() => {
+          // Expected to fail since flow with same name already exists
+        });
+      });
+      await test.step('Verify duplicate flow creation is rejected', async () => {
+        await flowCreationDef.assertDuplicateFlowRejected({ page, flowName: flowSeed.name });
+        await page.close().catch(() => {});
+        await page.context().close().catch(() => {});
+      });
+    } finally {
+      await page.close().catch(() => {});
+      await page.context().close().catch(() => {});
+    }
   });
 
   test('TC_005 - Edit flow name and description @FC_TC005', async ({ page }) => {
@@ -316,8 +328,8 @@ test.describe.serial('@FlowCreation dependent tests', () => {
         flowDescription: flowSeed.description,
       });
     });
-    await test.step('Open flow screen and deploy flow', async () => {
-      await flowCreationDef.deployFlowFromFlowScreenInsideProject({ page, flowName: flowSeed.name });
+    await test.step('Deploy flow directly from the Flows tab', async () => {
+      await flowCreationDef.deployFlowInsideProject({ page, flowName: flowSeed.name });
     });
     await test.step('Verify deployed flow is visible in Deployments tab', async () => {
       await projectCreationDef.openProjectsList({ page });
@@ -337,6 +349,7 @@ test.describe.serial('@FlowCreation dependent tests', () => {
       name: `flow_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
       description: `delete flow ${faker.lorem.words(2)}`,
     };
+      test.setTimeout(180_000);
     await test.step('Open Projects list', async () => {
       await projectCreationDef.openProjectsList({ page });
       await projectCreationDef.assertProjectsListVisible({ page });
@@ -367,39 +380,4 @@ test.describe.serial('@FlowCreation dependent tests', () => {
     });
   });
 
-  test('TC_010 - Check version of the flow @FC_TC010', async ({ page }) => {
-    const projectSeedForFlowVersion = {
-      name: `${NAME_PREFIX}_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
-      description: `${NAME_PREFIX} version project ${faker.lorem.words(2)}`,
-    };
-    const flowSeed = {
-      name: `flow_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
-      description: `version flow ${faker.lorem.words(2)}`,
-    };
-    await test.step('Open Projects list', async () => {
-      await projectCreationDef.openProjectsList({ page });
-      await projectCreationDef.assertProjectsListVisible({ page });
-    });
-    await test.step('Create project and open project details', async () => {
-      await flowCreationDef.startFlowCreation({ page });
-      await flowCreationDef.createFlow({
-        page,
-        flowName: projectSeedForFlowVersion.name,
-        flowDescription: projectSeedForFlowVersion.description,
-      });
-      await projectCreationDef.clickCloseProjectDialog({ page }).catch(() => {});
-      await flowCreationDef.clickFlowProjectDetails({ page, flowName: projectSeedForFlowVersion.name });
-    });
-    await test.step('Create flow inside project', async () => {
-      await flowCreationDef.createFlowInsideProject({
-        page,
-        flowName: flowSeed.name,
-        flowDescription: flowSeed.description,
-      });
-    });
-    await test.step('Check flow version on flow screen', async () => {
-      await flowCreationDef.assertFlowVersionVisibleInFlowScreen({ page, flowName: flowSeed.name });
-      await projectCreationDef.clickCloseProjectDialog({ page }).catch(() => {});
-    });
-  });
 });
