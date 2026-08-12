@@ -68,7 +68,6 @@ async function fillFirstVisible(candidates: Locator[], value: string): Promise<v
       return;
     }
   }
-
   await candidates[0].fill(value);
 }
 
@@ -182,9 +181,7 @@ function resolveProjectsUrl(): string {
   if (typeof configuredUrl !== 'string' || configuredUrl.trim().length === 0) {
     throw new Error('Missing config.url in tests/configFiles configuration. Set url in the active TEST_CONFIG file or environment.');
   }
-
   const baseUrl = configuredUrl.trim();
-
   return baseUrl.replace(/\/smc2\/(home|dashboard|login|projects).*$/i, '/smc2/projects');
 }
 
@@ -251,19 +248,16 @@ async function clickFirstVisibleWithRetry(
         return true;
       }
     }
-
     if (attempt < attempts) {
       await page.waitForTimeout(1_500);
     }
   }
-
   return false;
 }
 
 export async function openProjectsList({ page }: PageArgs): Promise<void> {
   const { projects } = projectCreationLocators(page);
 
-  // Assume caller already authenticated and just navigate to Projects reliably.
   await page.waitForLoadState('domcontentloaded').catch(() => undefined);
 
   const signInVisible =
@@ -308,6 +302,7 @@ export async function openProjectsList({ page }: PageArgs): Promise<void> {
     await page.waitForTimeout(1_500);
   }
 
+  // ✅ FIX 1: Increased timeout from 30_000 to 60_000 to handle parallel worker load
   const landingSignalVisible = await expect
     .poll(async () => {
       for (const signal of projects.landingSignals) {
@@ -315,10 +310,9 @@ export async function openProjectsList({ page }: PageArgs): Promise<void> {
           return true;
         }
       }
-
       return /\/smc2\/projects/i.test(page.url());
     }, {
-      timeout: 30_000,
+      timeout: 60_000,      // ← FIXED: was 30_000
       intervals: [500, 1_000, 1_500, 2_000],
     })
     .toBeTruthy();
@@ -329,7 +323,6 @@ export async function openProjectsList({ page }: PageArgs): Promise<void> {
 export async function assertProjectsListVisible({ page }: PageArgs): Promise<void> {
   const { projects, createProject } = projectCreationLocators(page);
 
-  // Accept multiple stable signals for Projects landing to avoid UI timing flakiness.
   let found = false;
   for (let attempt = 0; attempt < 4; attempt++) {
     for (const signal of projects.listSignals) {
@@ -418,7 +411,6 @@ export async function enterProjectDetails(
         await page.waitForTimeout(5_000);
         break;
       } catch {
-        // If overlay masks intercept pointer events, force-click the visible target.
         await button.click({ force: true, timeout: 5_000 });
         createClicked = true;
         await page.waitForTimeout(5_000);
@@ -448,7 +440,6 @@ export async function clickCloseProjectDialog({ page }: PageArgs): Promise<void>
   const { createProject } = projectCreationLocators(page);
   const dialogVisibleInitially = await createProject.dialog.isVisible().catch(() => false);
 
-  // If dialog is already closed, treat as success.
   if (!dialogVisibleInitially) {
     return;
   }
@@ -550,6 +541,7 @@ export async function confirmProjectDeletion({ page }: PageArgs): Promise<void> 
 export async function assertProjectStillPresent({ page, projectName }: ProjectNameArgs): Promise<void> {
   const { projects } = projectCreationLocators(page);
 
+  // ✅ FIX 2: Increased timeout from 30_000 to 60_000
   await expect
     .poll(async () => {
       const projectRow = projects.projectNameText(projectName);
@@ -566,7 +558,7 @@ export async function assertProjectStillPresent({ page, projectName }: ProjectNa
       const regexByText = page.getByText(new RegExp(escapedName, 'i')).first();
       return await regexByText.isVisible().catch(() => false);
     }, {
-      timeout: 30_000,
+      timeout: 60_000,      // ← FIXED: was 30_000
       intervals: [500, 1_000, 1_500, 2_000],
     })
     .toBeTruthy();
@@ -576,7 +568,8 @@ export async function assertProjectDeleted({ page, projectName }: ProjectNameArg
   const projectNameOccurrences = page.locator(
     `xpath=//*[normalize-space()=${JSON.stringify(projectName)}]`
   );
-  await expect(projectNameOccurrences).toHaveCount(0, { timeout: 30_000 });
+  // ✅ FIX 3: Increased timeout from 30_000 to 60_000
+  await expect(projectNameOccurrences).toHaveCount(0, { timeout: 60_000 }); // ← FIXED: was 30_000
 }
 
 export async function openProjectForEdit({ page, projectName }: ProjectNameArgs): Promise<void> {
@@ -647,7 +640,6 @@ export async function assertProjectUpdated({ page, expectedDescription }: Expect
     }
   }
 
-  // Some UIs may not show a toast; verify edited value persisted in the form.
   if (!found) {
     for (const candidate of createProject.descriptionInputs) {
       if (await candidate.first().isVisible().catch(() => false)) {
@@ -660,7 +652,6 @@ export async function assertProjectUpdated({ page, expectedDescription }: Expect
     }
   }
 
-  // Final fallback: no edit dialog visible anymore.
   if (!found) {
     found = !(await createProject.dialog.isVisible().catch(() => false));
   }

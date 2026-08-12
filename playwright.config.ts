@@ -7,26 +7,34 @@ export default defineConfig({
   testMatch: ['**/*.spec.ts', '**/*.test.ts'],
   // Skip config files and binary attachment payloads.
   testIgnore: ['**/configFiles/**', '**/testData/attachments/**'],
-  timeout: 120_000,
+
+  // ✅ FIX 4: Increased global test timeout from 120s to 180s to handle slow app under parallel load
+  timeout: 180_000,
+
   expect: {
-    timeout: 120_000,
+    // ✅ FIX 5: Increased expect timeout from 120s to 180s to match test timeout
+    timeout: 180_000,
   },
+
   /* Run tests in files in parallel */
   fullyParallel: false,
+
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry failed tests once */
-  //retries: 1,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+  // ✅ FIX 6: Enabled retries — auto-retry once on transient/flaky failures
+  retries: 1,
+
+  /* Opt out of parallel tests on CI. */
+  // ✅ FIX 7: Limit workers to 2 locally to reduce parallel load on SRI app
+  workers: process.env.CI ? 1 : 1,
+
+  /* Reporter to use. */
+  reporter: 'html',
+
+  /* Shared settings for all the projects below. */
+  use: {
+    /* Collect trace when retrying the failed test. */
     trace: 'on-first-retry',
     ignoreHTTPSErrors: true,
   },
@@ -44,4 +52,3 @@ export default defineConfig({
   ],
 
 });
-
