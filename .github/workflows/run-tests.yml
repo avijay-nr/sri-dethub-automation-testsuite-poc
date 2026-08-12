@@ -19,11 +19,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,17 +49,22 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-      - name: Setup Pages
+      - name: Publish Test Summary
         if: always()
-        uses: actions/configure-pages@v4
-
-      - name: Upload to Pages
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: playwright-report/
-
-      - name: Deploy to GitHub Pages
-        if: always()
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f playwright-report/results.json ]; then
+            passed=$(cat playwright-report/results.json | grep -o '"status":"passed"' | wc -l)
+            failed=$(cat playwright-report/results.json | grep -o '"status":"failed"' | wc -l)
+            skipped=$(cat playwright-report/results.json | grep -o '"status":"skipped"' | wc -l)
+            echo "| Status  | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Passed  | $passed |" >> $GITHUB_STEP_SUMMARY
+            echo "| Failed  | $failed |" >> $GITHUB_STEP_SUMMARY
+            echo "| Skipped | $skipped |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Tests completed! See artifacts for full report." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Full HTML Report: Download from Artifacts section below." >> $GITHUB_STEP_SUMMARY
