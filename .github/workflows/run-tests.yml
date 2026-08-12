@@ -37,10 +37,12 @@ jobs:
       - name: Run Playwright tests
         run: |
           if [ -n "${{ github.event.inputs.tags }}" ]; then
-            npx playwright test --grep "${{ github.event.inputs.tags }}"
+            npx playwright test --grep "${{ github.event.inputs.tags }}" --reporter=html,json
           else
-            npx playwright test
+            npx playwright test --reporter=html,json
           fi
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/results.json
 
       - name: Upload Playwright Report
         if: always()
@@ -55,9 +57,9 @@ jobs:
           echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f playwright-report/results.json ]; then
-            passed=$(cat playwright-report/results.json | grep -o '"status":"passed"' | wc -l)
-            failed=$(cat playwright-report/results.json | grep -o '"status":"failed"' | wc -l)
-            skipped=$(cat playwright-report/results.json | grep -o '"status":"skipped"' | wc -l)
+            passed=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['expected'])")
+            failed=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['unexpected'])")
+            skipped=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['skipped'])")
             echo "| Status  | Count |" >> $GITHUB_STEP_SUMMARY
             echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
             echo "| Passed  | $passed |" >> $GITHUB_STEP_SUMMARY
