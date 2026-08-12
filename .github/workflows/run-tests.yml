@@ -57,14 +57,47 @@ jobs:
           echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f playwright-report/results.json ]; then
-            passed=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['expected'])")
-            failed=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['unexpected'])")
-            skipped=$(python3 -c "import json; d=json.load(open('playwright-report/results.json')); print(d['stats']['skipped'])")
-            echo "| Status  | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Passed  | $passed |" >> $GITHUB_STEP_SUMMARY
-            echo "| Failed  | $failed |" >> $GITHUB_STEP_SUMMARY
-            echo "| Skipped | $skipped |" >> $GITHUB_STEP_SUMMARY
+            python3 << 'EOF' >> $GITHUB_STEP_SUMMARY
+          import json
+
+          with open('playwright-report/results.json') as f:
+              data = json.load(f)
+
+          stats = data.get('stats', {})
+          passed = stats.get('expected', 0)
+          failed = stats.get('unexpected', 0)
+          skipped = stats.get('skipped', 0)
+
+          print("### Summary")
+          print("")
+          print("| Status  | Count |")
+          print("|---------|-------|")
+          print(f"| Passed  | {passed} |")
+          print(f"| Failed  | {failed} |")
+          print(f"| Skipped | {skipped} |")
+          print("")
+          print("### Test Details")
+          print("")
+          print("| Test Name | Status | Duration |")
+          print("|-----------|--------|----------|")
+
+          for suite in data.get('suites', []):
+              for spec in suite.get('specs', []):
+                  title = spec.get('title', 'Unknown')
+                  for test in spec.get('tests', []):
+                      status = test.get('status', 'unknown')
+                      duration = sum(r.get('duration', 0) for r in test.get('results', []))
+                      duration_sec = round(duration / 1000, 2)
+                      if status == 'expected':
+                          status_text = "Passed"
+                      elif status == 'unexpected':
+                          status_text = "Failed"
+                      elif status == 'skipped':
+                          status_text = "Skipped"
+                      else:
+                          status_text = status
+                      print(f"| {title} | {status_text} | {duration_sec}s |")
+          EOF
           else
             echo "Tests completed! See artifacts for full report." >> $GITHUB_STEP_SUMMARY
           fi
