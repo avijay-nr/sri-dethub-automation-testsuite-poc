@@ -1,0 +1,105 @@
+name: SRI Playwright Tests
+
+on:
+#   push:
+#     branches:
+#       - vinay-sri-localbranch
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'vinay-sri-localbranch'
+      tags:
+        description: 'Test tag to run (leave empty for Full Regression)'
+        required: false
+        default: ''
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: |
+          if [ -n "${{ github.event.inputs.tags }}" ]; then
+            npx playwright test --grep "${{ github.event.inputs.tags }}" --reporter=html,json
+          else
+            npx playwright test --reporter=html,json
+          fi
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/results.json
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+      - name: Publish Test Summary
+        if: always()
+        run: |
+          echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f playwright-report/results.json ]; then
+            python3 << 'EOF' >> $GITHUB_STEP_SUMMARY
+          import json
+
+          with open('playwright-report/results.json') as f:
+              data = json.load(f)
+
+          stats = data.get('stats', {})
+          passed = stats.get('expected', 0)
+          failed = stats.get('unexpected', 0)
+          skipped = stats.get('skipped', 0)
+
+          print("### Summary")
+          print("")
+          print("| Status  | Count |")
+          print("|---------|-------|")
+          print(f"| Passed  | {passed} |")
+          print(f"| Failed  | {failed} |")
+          print(f"| Skipped | {skipped} |")
+          print("")
+          print("### Test Details")
+          print("")
+          print("| Test Name | Status | Duration |")
+          print("|-----------|--------|----------|")
+
+          for suite in data.get('suites', []):
+              for spec in suite.get('specs', []):
+                  title = spec.get('title', 'Unknown')
+                  for test in spec.get('tests', []):
+                      status = test.get('status', 'unknown')
+                      duration = sum(r.get('duration', 0) for r in test.get('results', []))
+                      duration_sec = round(duration / 1000, 2)
+                      if status == 'expected':
+                          status_text = "Passed"
+                      elif status == 'unexpected':
+                          status_text = "Failed"
+                      elif status == 'skipped':
+                          status_text = "Skipped"
+                      else:
+                          status_text = status
+                      print(f"| {title} | {status_text} | {duration_sec}s |")
+          EOF
+          else
+            echo "Tests completed! See artifacts for full report." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Full HTML Report: Download from Artifacts section below." >> $GITHUB_STEP_SUMMARY
