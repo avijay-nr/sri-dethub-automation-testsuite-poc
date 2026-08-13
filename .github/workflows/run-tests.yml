@@ -1,9 +1,9 @@
 name: SRI Playwright Tests
 
 on:
-  push:
-    branches:
-      - vinay-sri-localbranch
+#   push:
+#     branches:
+#       - vinay-sri-localbranch
   workflow_dispatch:
     inputs:
       branch:
