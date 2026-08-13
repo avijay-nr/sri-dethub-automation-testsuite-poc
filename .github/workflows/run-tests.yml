@@ -5,15 +5,15 @@ on:
 #     branches:
 #       - vinay-sri-localbranch
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to run tests on'
-        required: true
-        default: 'vinay-sri-localbranch'
-      tags:
-        description: 'Test tag to run (leave empty for Full Regression)'
-        required: false
-        default: ''
+    # inputs:
+    #   branch:
+    #     description: 'Branch to run tests on'
+    #     required: true
+    #     default: 'vinay-sri-localbranch'
+    #   tags:
+    #     description: 'Test tag to run (leave empty for Full Regression)'
+    #     required: false
+    #     default: ''
 
 jobs:
   test:
