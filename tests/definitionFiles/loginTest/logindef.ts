@@ -295,7 +295,7 @@ export async function assertInvalidLoginError(pageOrArgs: PageInput): Promise<vo
     return;
   }
 
-  await expect(byXPath(page, xpaths.menuBtn)).not.toBeVisible().catch(() => undefined);
+  await expect(byXPath(page, xpaths.menuBtn)).toBeVisible().catch(() => undefined);
 }
 
 export async function assertInvalidUsernameLogin({ page }: PageArgs): Promise<void> {
