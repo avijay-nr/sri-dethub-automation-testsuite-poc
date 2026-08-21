@@ -1,0 +1,194 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/18.20.8/x64/bin/node",
+      "/home/runner/work/sri-dethub-automation-testsuite-poc/sri-dethub-automation-testsuite-poc/node_modules/.bin/playwright",
+      "test",
+      "--grep",
+      "@smoke"
+    ],
+    "configFile": "/home/runner/work/sri-dethub-automation-testsuite-poc/sri-dethub-automation-testsuite-poc/playwright.config.ts",
+    "rootDir": "/home/runner/work/sri-dethub-automation-testsuite-poc/sri-dethub-automation-testsuite-poc/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/avijay-nr/sri-dethub-automation-testsuite-poc/commit/bf798c311fb46f4692004c4a760f65d51cc18e34",
+        "commitHash": "bf798c311fb46f4692004c4a760f65d51cc18e34",
+        "buildHref": "https://github.com/avijay-nr/sri-dethub-automation-testsuite-poc/actions/runs/32469525157"
+      },
+      "gitCommit": {
+        "shortHash": "bf798c3",
+        "hash": "bf798c311fb46f4692004c4a760f65d51cc18e34",
+        "subject": "refactor: replace deploy-report job with peaceiris gh-pages deploy step",
+        "body": "refactor: replace deploy-report job with peaceiris gh-pages deploy step\n",
+        "author": {
+          "name": "VinaySM",
+          "email": "vinay.sm@symphonyai.com",
+          "time": 1787305576000
+        },
+        "committer": {
+          "name": "VinaySM",
+          "email": "vinay.sm@symphonyai.com",
+          "time": 1787305576000
+        },
+        "branch": "vinay-sri-localbranch"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/sri-dethub-automation-testsuite-poc/sri-dethub-automation-testsuite-poc/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/avijay-nr/sri-dethub-automation-testsuite-poc/commit/bf798c311fb46f4692004c4a760f65d51cc18e34",
+            "commitHash": "bf798c311fb46f4692004c4a760f65d51cc18e34",
+            "buildHref": "https://github.com/avijay-nr/sri-dethub-automation-testsuite-poc/actions/runs/32469525157"
+          },
+          "gitCommit": {
+            "shortHash": "bf798c3",
+            "hash": "bf798c311fb46f4692004c4a760f65d51cc18e34",
+            "subject": "refactor: replace deploy-report job with peaceiris gh-pages deploy step",
+            "body": "refactor: replace deploy-report job with peaceiris gh-pages deploy step\n",
+            "author": {
+              "name": "VinaySM",
+              "email": "vinay.sm@symphonyai.com",
+              "time": 1787305576000
+            },
+            "committer": {
+              "name": "VinaySM",
+              "email": "vinay.sm@symphonyai.com",
+              "time": 1787305576000
+            },
+            "branch": "vinay-sri-localbranch"
+          },
+          "actualWorkers": 1
+        },
+        "id": "chrome",
+        "name": "chrome",
+        "testDir": "/home/runner/work/sri-dethub-automation-testsuite-poc/sri-dethub-automation-testsuite-poc/tests",
+        "testIgnore": [
+          "**/configFiles/**",
+          "**/testData/attachments/**"
+        ],
+        "testMatch": [
+          "**/*.spec.ts",
+          "**/*.test.ts"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "github",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "SpecFiles/sriLogin.spec.ts",
+      "file": "SpecFiles/sriLogin.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Login to SRI portal @regression @smoke @login @login_TC001",
+          "ok": true,
+          "tags": [
+            "regression",
+            "smoke",
+            "login",
+            "login_TC001"
+          ],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chrome",
+              "projectName": "chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6480,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "Login to SRI portal",
+                      "duration": 4776
+                    },
+                    {
+                      "title": "Assert login success",
+                      "duration": 8
+                    }
+                  ],
+                  "startTime": "2026-08-21T09:47:39.601Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e7943f741e5f2b3eb6a-248e8197b4581786e3f9",
+          "file": "SpecFiles/sriLogin.spec.ts",
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-21T09:47:38.599Z",
+    "duration": 13950.89,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
