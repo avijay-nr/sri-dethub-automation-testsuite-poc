@@ -94,7 +94,10 @@ jobs:
             OVERALL="✅ PASSED"
           fi
 
-          PAGES_URL="https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d'/' -f2)/"
+          # ✅ Points directly to THIS run's report!
+          REPO_NAME=$(echo '${{ github.repository }}' | cut -d'/' -f2)
+          PAGES_URL="https://${{ github.repository_owner }}.github.io/${REPO_NAME}/reports/${{ github.run_id }}/"
+          INDEX_URL="https://${{ github.repository_owner }}.github.io/${REPO_NAME}/"
 
           cat >> $GITHUB_STEP_SUMMARY << EOF
 
@@ -128,8 +131,8 @@ jobs:
 
           | Link | Description |
           |------|-------------|
-          | [📄 Live HTML Report](${PAGES_URL}) | Latest report on GitHub Pages |
-          | [📂 All Reports](${PAGES_URL}) | Index of last 10 runs |
+          | [📄 Live HTML Report](${PAGES_URL}) | This run's Playwright report ✅ |
+          | [📂 All Reports](${INDEX_URL}) | Index of last 10 runs |
 
           EOF
 
@@ -173,10 +176,11 @@ jobs:
 
       - name: 📂 Store Report & Cleanup Old
         run: |
-          TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
-          REPORT_DIR="gh-pages/reports/${TIMESTAMP}"
+          # ✅ Use run_id as folder name — matches Live Report URL!
+          RUN_ID="${{ github.run_id }}"
+          REPORT_DIR="gh-pages/reports/${RUN_ID}"
           cp -r new-report/ "$REPORT_DIR"
-          echo "✅ Report saved to: reports/${TIMESTAMP}"
+          echo "✅ Report saved to: reports/${RUN_ID}"
 
           cd gh-pages/reports
           REPORT_COUNT=$(ls -d */ 2>/dev/null | wc -l)
@@ -231,6 +235,11 @@ jobs:
                 font-weight: 700;
                 margin-left: 10px;
               }
+              .run-id {
+                color: #888;
+                font-size: 12px;
+                margin-left: 8px;
+              }
               .footer {
                 margin-top: 40px;
                 padding-top: 20px;
@@ -251,12 +260,11 @@ jobs:
           FIRST=true
           for dir in $(ls -dr */); do
             dirname="${dir%/}"
-            DISPLAY_DATE=$(echo "$dirname" | sed 's/_/ /; s/-/:/4; s/-/:/4')
             if [ "$FIRST" = true ]; then
-              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">${DISPLAY_DATE}</a><span class=\"badge\">LATEST</span></li>" >> ../index.html
+              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">Run #${dirname}</a><span class=\"badge\">LATEST</span></li>" >> ../index.html
               FIRST=false
             else
-              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">${DISPLAY_DATE}</a></li>" >> ../index.html
+              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">Run #${dirname}</a></li>" >> ../index.html
             fi
           done
           cd ../..
