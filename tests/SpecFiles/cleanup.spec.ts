@@ -1,14 +1,10 @@
-
-//Commited to work on Github actions
-
-
 // import { test } from '@playwright/test';
 // import * as loginDef from '../definitionFiles/loginTest/logindef';
 // import * as projectCreationDef from '../definitionFiles/projectCreation/projectCreationdef';
 
 // const NAME_PREFIX = 'QA_SRI_generic';
 
-// test('Cleanup - Delete all QA_SRI_generic projects', async ({ page }) => {
+// test('Cleanup - Delete all QA_SRI_generic projects @cleanup', async ({ page }) => {
 //   test.setTimeout(300_000);
 
 //   await loginDef.loginToPortal(page);

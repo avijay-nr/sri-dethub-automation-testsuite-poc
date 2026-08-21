@@ -1,110 +1,301 @@
-name: SRI Playwright Tests
+name: 🧪 SRI - Detection Hub Tests
 
 on:
-#   push:
-#     branches:
-#       - vinay-sri-localbranch
   workflow_dispatch:
-    # inputs:
-    #   branch:
-    #     description: 'Branch to run tests on'
-    #     required: true
-    #     default: 'vinay-sri-localbranch'
-    #   tags:
-    #     description: 'Test tag to run (leave empty for Full Regression)'
-    #     required: false
-    #     default: ''
     inputs:
-      email:
-        description: 'Email address to send test results to'
+      branch:
+        description: '🌿 Branch to run tests on'
         required: true
-        default: ''
+        type: string
+        default: 'main'
+      environment:
+        description: '🌍 Target Environment'
+        required: true
+        type: choice
+        options:
+          - QA-Dev
+          - QA-Staging
+          - UAT
+        default: 'QA-Dev'
+      tags:
+        description: '🏷️ Test Tags (e.g. @smoke, @regression, @det_TC0001)'
+        required: true
+        type: string
+        default: '@regression'
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
-      - name: Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📦 Install Dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: |
-          if [ -n "${{ github.event.inputs.tags }}" ]; then
-            npx playwright test --grep "${{ github.event.inputs.tags }}" --reporter=html,json
-          else
-            npx playwright test --reporter=html,json
-          fi
+      - name: 🧪 Run Tests
         env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/results.json
+          TEST_ENV: ${{ inputs.environment }}
+        run: |
+          echo "╔══════════════════════════════════════════════════╗"
+          echo "║   🧪 SRI - DETECTION HUB TEST EXECUTION         ║"
+          echo "╠══════════════════════════════════════════════════╣"
+          echo "║ 🌍 Environment : ${{ inputs.environment }}"
+          echo "║ 🏷️  Tags        : ${{ inputs.tags }}"
+          echo "║ 🌿 Branch      : ${{ inputs.branch }}"
+          echo "║ 👤 Triggered by: ${{ github.actor }}"
+          echo "║ 🕐 Started at  : $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "╚══════════════════════════════════════════════════╝"
+          echo ""
+          echo "🚀 Starting test execution..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          npx playwright test --grep "${{ inputs.tags }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Test execution completed!"
 
-      - name: Upload Playwright Report
+      - name: 📊 Generate Test Summary
+        if: always()
+        run: |
+          if [ ! -f playwright-report/results.json ]; then
+            echo "## ❌ No results.json found — tests may have crashed!" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          PASSED=$(jq '.stats.expected // 0' playwright-report/results.json)
+          FAILED=$(jq '.stats.unexpected // 0' playwright-report/results.json)
+          FLAKY=$(jq '.stats.flaky // 0' playwright-report/results.json)
+          SKIPPED=$(jq '.stats.skipped // 0' playwright-report/results.json)
+          TOTAL=$((PASSED + FAILED + FLAKY + SKIPPED))
+          DURATION=$(jq '.stats.duration // 0' playwright-report/results.json)
+          DURATION_MIN=$(echo "scale=1; $DURATION / 60000" | bc)
+
+          # Determine overall status emoji
+          if [ "$FAILED" -gt 0 ]; then
+            OVERALL="❌ FAILED"
+          elif [ "$FLAKY" -gt 0 ]; then
+            OVERALL="⚠️ FLAKY"
+          else
+            OVERALL="✅ PASSED"
+          fi
+
+          PAGES_URL="https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d'/' -f2)/"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ## 📝 SRI - Detection Hub Test Results Summary
+
+          ### 🏷️ Run Configuration
+
+          | Parameter | Value |
+          |-----------|-------|
+          | 🌍 Environment | \`${{ inputs.environment }}\` |
+          | 🏷️ Tags | \`${{ inputs.tags }}\` |
+          | 🌿 Branch | \`${{ inputs.branch }}\` |
+          | 👤 Triggered By | \`${{ github.actor }}\` |
+          | ⏱️ Duration | \`${DURATION_MIN} min\` |
+          | 🏁 Overall | **${OVERALL}** |
+
+          ---
+
+          ### 🧪 Test Results
+
+          | Status | Count |
+          |--------|-------|
+          | ✅ Passed | ${PASSED} |
+          | ❌ Failed | ${FAILED} |
+          | ⚠️ Flaky | ${FLAKY} |
+          | ⏭️ Skipped | ${SKIPPED} |
+          | 📊 Total | ${TOTAL} |
+
+          ---
+
+          ### 🔗 Reports
+
+          | Link | Description |
+          |------|-------------|
+          | [📄 Live HTML Report](${PAGES_URL}) | Latest report on GitHub Pages |
+          | [📂 All Reports](${PAGES_URL}) | Index of last 10 runs |
+
+          EOF
+
+      - name: 📤 Upload Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: detection-hub-report
           path: playwright-report/
+          retention-days: 14
 
-      - name: Publish Test Summary
-        if: always()
+  # ✅ Deploy HTML Report to GitHub Pages — keeps latest 10!
+  deploy-report:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: 📥 Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true
+
+      - name: 📁 Prepare Reports Directory
         run: |
-          echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f playwright-report/results.json ]; then
-            python3 << 'EOF' >> $GITHUB_STEP_SUMMARY
-          import json
+          mkdir -p gh-pages/reports
 
-          with open('playwright-report/results.json') as f:
-              data = json.load(f)
+      - name: 📥 Download Report Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: detection-hub-report
+          path: new-report/
 
-          stats = data.get('stats', {})
-          passed = stats.get('expected', 0)
-          failed = stats.get('unexpected', 0)
-          skipped = stats.get('skipped', 0)
+      - name: 📂 Store Report & Cleanup Old
+        run: |
+          TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
+          REPORT_DIR="gh-pages/reports/${TIMESTAMP}"
+          cp -r new-report/ "$REPORT_DIR"
+          echo "✅ Report saved to: reports/${TIMESTAMP}"
 
-          print("### Summary")
-          print("")
-          print("| Status  | Count |")
-          print("|---------|-------|")
-          print(f"| Passed  | {passed} |")
-          print(f"| Failed  | {failed} |")
-          print(f"| Skipped | {skipped} |")
-          print("")
-          print("### Test Details")
-          print("")
-          print("| Test Name | Status | Duration |")
-          print("|-----------|--------|----------|")
+          # ✅ Keep only latest 10 reports — delete oldest!
+          cd gh-pages/reports
+          REPORT_COUNT=$(ls -d */ 2>/dev/null | wc -l)
+          echo "📊 Total reports: $REPORT_COUNT"
 
-          for suite in data.get('suites', []):
-              for spec in suite.get('specs', []):
-                  title = spec.get('title', 'Unknown')
-                  for test in spec.get('tests', []):
-                      status = test.get('status', 'unknown')
-                      duration = sum(r.get('duration', 0) for r in test.get('results', []))
-                      duration_sec = round(duration / 1000, 2)
-                      if status == 'expected':
-                          status_text = "Passed"
-                      elif status == 'unexpected':
-                          status_text = "Failed"
-                      elif status == 'skipped':
-                          status_text = "Skipped"
-                      else:
-                          status_text = status
-                      print(f"| {title} | {status_text} | {duration_sec}s |")
-          EOF
-          else
-            echo "Tests completed! See artifacts for full report." >> $GITHUB_STEP_SUMMARY
+          if [ "$REPORT_COUNT" -gt 10 ]; then
+            REMOVE_COUNT=$((REPORT_COUNT - 10))
+            echo "🗑️ Removing $REMOVE_COUNT oldest report(s)..."
+            ls -d */ | sort | head -n $REMOVE_COUNT | xargs rm -rf
+            echo "✅ Cleanup done! Keeping latest 10."
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Full HTML Report: Download from Artifacts section below." >> $GITHUB_STEP_SUMMARY
+          cd ../..
+
+      - name: 📝 Generate Index Page
+        run: |
+          cat > gh-pages/index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>🧪 SRI - Detection Hub Test Reports</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                padding: 40px;
+                background: #0f0f23;
+                color: #e0e0e0;
+                min-height: 100vh;
+              }
+              .container { max-width: 800px; margin: 0 auto; }
+              h1 {
+                color: #00d4ff;
+                font-size: 28px;
+                margin-bottom: 8px;
+              }
+              .subtitle {
+                color: #888;
+                font-size: 14px;
+                margin-bottom: 32px;
+              }
+              .report-list { list-style: none; padding: 0; }
+              .report-list li {
+                padding: 16px 20px;
+                border: 1px solid #2a2a4a;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                transition: all 0.2s;
+                background: #1a1a3e;
+              }
+              .report-list li:hover {
+                border-color: #00d4ff;
+                background: #1f1f4a;
+              }
+              .report-list li:first-child {
+                border-color: #00d4ff;
+                background: #1a2a4a;
+              }
+              a {
+                color: #00d4ff;
+                text-decoration: none;
+                font-size: 16px;
+                font-weight: 500;
+              }
+              a:hover { text-decoration: underline; }
+              .badge {
+                background: #00d4ff;
+                color: #000;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 700;
+                margin-left: 10px;
+              }
+              .footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #2a2a4a;
+                color: #666;
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🧪 SRI - Detection Hub Test Reports</h1>
+              <p class="subtitle">Latest 10 test execution reports (newest first)</p>
+              <ul class="report-list">
+          INDEXEOF
+
+          # List reports newest first
+          cd gh-pages/reports
+          FIRST=true
+          for dir in $(ls -dr */); do
+            dirname="${dir%/}"
+            DISPLAY_DATE=$(echo "$dirname" | sed 's/_/ /; s/-/:/4; s/-/:/4')
+            if [ "$FIRST" = true ]; then
+              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">${DISPLAY_DATE}</a><span class=\"badge\">LATEST</span></li>" >> ../index.html
+              FIRST=false
+            else
+              echo "      <li>📄 <a href=\"reports/${dirname}/index.html\">${DISPLAY_DATE}</a></li>" >> ../index.html
+            fi
+          done
+          cd ../..
+
+          cat >> gh-pages/index.html << 'INDEXEOF'
+              </ul>
+              <div class="footer">
+                <p>Auto-generated by SRI Detection Hub CI/CD Pipeline | Only latest 10 reports retained</p>
+              </div>
+            </div>
+          </body>
+          </html>
+          INDEXEOF
+
+      - name: 🚀 Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh-pages/
+
+      - name: 🌐 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
