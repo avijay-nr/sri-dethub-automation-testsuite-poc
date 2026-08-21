@@ -18,10 +18,14 @@ on:
         type: string
         default: ''
       tags:
-        description: '🏷️ Test Tags (e.g. @smoke, @regression, @det_TC0001)'
+        description: '🏷️ Test Tags'
         required: true
-        type: string
-        default: '@regression'
+        type: choice
+        options:
+          - '@smoke'
+          - '@regression'
+          - '@login'
+        default: '@smoke'
 
 jobs:
   test:
