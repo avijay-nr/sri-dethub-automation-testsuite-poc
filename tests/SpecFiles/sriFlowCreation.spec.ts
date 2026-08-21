@@ -1,6 +1,3 @@
-
-//Commited to work on Github actions
-
 // import { test } from '@playwright/test';
 // import { faker } from '@faker-js/faker';
 // import * as flowCreationDef from '../definitionFiles/flowCreation/flowCreationdef';
@@ -21,14 +18,14 @@
 //     });
 //   });
 
-//   test('TC_001 - Login and open Projects list @FC_TC001', async ({ page }) => {
+//   test('Login and open Projects list @regression @smoke @flowcreation @flowcreation_TC001', async ({ page }) => {
 //     await test.step('Click on Projects', async () => {
 //       await projectCreationDef.openProjectsList({ page });
 //       await projectCreationDef.assertProjectsListVisible({ page });
 //     });
 //   });
 
-//   test('TC_002 - Click Create Flow and create flow @FC_TC002', async ({ page }) => {
+//   test('Click Create Flow and create flow @regression @smoke @flowcreation @flowcreation_TC002', async ({ page }) => {
 //     await test.step('Open Projects list', async () => {
 //       await projectCreationDef.openProjectsList({ page });
 //       await projectCreationDef.assertProjectsListVisible({ page });
@@ -45,7 +42,7 @@
 //     });
 //   });
 
-//   test('TC_003 - Open project details and click +Create Flow @FC_TC003', async ({ page }) => {
+//   test('Open project details and click +Create Flow @regression @flowcreation @flowcreation_TC003', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const project = {
@@ -97,7 +94,7 @@
 //     });
 //   });
 
-//   test('TC_004 - Duplicate flow name should be rejected @FC_TC004', async ({ page }) => {
+//   test('Duplicate flow name should be rejected @regression @flowcreation @flowcreation_TC004', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForDuplicateFlow = {
@@ -169,7 +166,7 @@
 //     });
 //   });
 
-//   test('TC_005 - Edit flow name and description @FC_TC005', async ({ page }) => {
+//   test('Edit flow name and description @regression @flowcreation @flowcreation_TC005', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForFlowEdit = {
@@ -237,7 +234,7 @@
 //     });
 //   });
 
-//   test('TC_006 - Deploy the created flow @FC_TC006', async ({ page }) => {
+//   test('Deploy the created flow @regression @smoke @flowcreation @flowcreation_TC006', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForFlowDeploy = {
@@ -286,7 +283,7 @@
 //     });
 //   });
 
-//   test('TC_007 - Export the created flow @FC_TC007', async ({ page }) => {
+//   test('Export the created flow @regression @flowcreation @flowcreation_TC007', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForFlowExport = {
@@ -335,7 +332,7 @@
 //     });
 //   });
 
-//   test('TC_008 - Create flow in overview and deploy from flow screen @FC_TC008', async ({ page }) => {
+//   test('Create flow in overview and deploy from flow screen @regression @flowcreation @flowcreation_TC008', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForOverviewFlowDeploy = {
@@ -387,7 +384,7 @@
 //     });
 //   });
 
-//   test('TC_009 - Delete the created flow @FC_TC009', async ({ page }) => {
+//   test('Delete the created flow @regression @flowcreation @flowcreation_TC009', async ({ page }) => {
 //     test.setTimeout(180_000);
 
 //     const projectSeedForFlowDelete = {
@@ -434,7 +431,7 @@
 //   });
 
 //   // ✅ FINAL CLEANUP — same proven logic as cleanup.spec.ts
-//   test('Cleanup - Delete all QA_SRI_generic projects @FC_CLEANUP', async ({ page }) => {
+//   test('Cleanup - Delete all QA_SRI_generic projects @flowcreation @flowcreation_CLEANUP', async ({ page }) => {
 //     test.setTimeout(300_000);
 
 //     await test.step('Open Projects list', async () => {

@@ -1,6 +1,3 @@
-
-//Commited to work on Github actions
-
 // import { test } from '@playwright/test';
 // import { faker } from '@faker-js/faker';
 // import * as loginDef from '../definitionFiles/loginTest/logindef';
@@ -18,7 +15,7 @@
 //     });
 //   });
 
-//   test('TC_001 - View list of available projects @PC_TC001', async ({ page }) => {
+//   test('View list of available projects @regression @smoke @projectcreation @projectcreation_TC001', async ({ page }) => {
 //     await test.step('Open Projects list', async () => {
 //       await projectCreationDef.openProjectsList({ page });
 //     });
@@ -27,7 +24,7 @@
 //     });
 //   });
 
-//   test('TC_002 - Create project, edit details, and initiate deletion @PC_TC002', async ({ page }) => {
+//   test('Create project, edit details, and initiate deletion @regression @smoke @projectcreation @projectcreation_TC002', async ({ page }) => {
 //     const editedDescription = 'description is edited';
 //     await test.step('Open Projects list', async () => {
 //       await projectCreationDef.openProjectsList({ page });
@@ -71,7 +68,7 @@
 //     });
 //   });
 
-//   test('TC_003 - Duplicate project name should be rejected @PC_TC003', async ({ page }) => {
+//   test('Duplicate project name should be rejected @regression @projectcreation @projectcreation_TC003', async ({ page }) => {
 //     const duplicateSeed = {
 //       name: `${NAME_PREFIX}_${faker.string.alphanumeric({ length: 6, casing: 'lower' })}`,
 //       description: `${NAME_PREFIX} duplicate ${faker.lorem.words(2)}`,
